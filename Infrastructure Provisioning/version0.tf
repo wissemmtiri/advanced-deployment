@@ -13,6 +13,11 @@ variable "password" {
     default     = "AsslemaYaHmema1234!"  
 }
 
+variable "count" {
+    description = "The number of virtual machines to create"
+    default     = 3
+}
+
 terraform {
     required_providers {
         azurerm = {
@@ -47,14 +52,16 @@ resource "azurerm_subnet" "tfsubnet" {
 }
 
 resource "azurerm_public_ip" "tfpubip" {
-    name                = "tfpubip"
+    count = var.count
+    name                = format("pubip%d", count.index + 1)
     location            = azurerm_resource_group.tfrg.location
     resource_group_name = azurerm_resource_group.tfrg.name
     allocation_method   = "Dynamic"
 }
 
-resource "azurerm_network_interface" "nic1" {
-    name                = "nic1"
+resource "azurerm_network_interface" "nic" {
+    count = var.count
+    name                = format("nic%d", count.index + 1)
     location            = azurerm_resource_group.tfrg.location
     resource_group_name = azurerm_resource_group.tfrg.name
 
@@ -62,15 +69,16 @@ resource "azurerm_network_interface" "nic1" {
         name                          = "ipconfig1"
         subnet_id                     = azurerm_subnet.tfsubnet.id
         private_ip_address_allocation = "Dynamic"
-        public_ip_address_id          = azurerm_public_ip.tfpubip.id
+        public_ip_address_id          = azurerm_public_ip.tfpubip[count.index].id
     }
 }
 
-resource "azurerm_linux_virtual_machine" "vm1" {
-    name                  = "vm1"
+resource "azurerm_linux_virtual_machine" "vm" {
+    count                 = var.count
+    name                  = format("vm%d", count.index + 1)
     location              = azurerm_resource_group.tfrg.location
     resource_group_name   = azurerm_resource_group.tfrg.name
-    network_interface_ids = [azurerm_network_interface.nic1.id]
+    network_interface_ids = [azurerm_network_interface.nic[count.index].id]
     size                  = "Standard_DS1_v2"
     disable_password_authentication = false
 
@@ -86,7 +94,7 @@ resource "azurerm_linux_virtual_machine" "vm1" {
         version   = "latest"
     }
 
-    computer_name = "vm1"
+    computer_name = format("vm%d", count.index + 1)
     admin_username = var.username
     admin_password = var.password
     
@@ -97,7 +105,7 @@ resource "azurerm_linux_virtual_machine" "vm1" {
 
     connection {
         type     = "ssh"
-        host     = azurerm_public_ip.tfpubip.ip_address
+        host     = azurerm_public_ip.tfpubip[count.index].ip_address
         user     = var.username
         password = var.password
         # private_key = file("~/.ssh/id_rsa")
@@ -106,10 +114,8 @@ resource "azurerm_linux_virtual_machine" "vm1" {
     tags = {
         environment = "Development"
     }
-
-    depends_on = [azurerm_public_ip.tfpubip]
 }
 
-output "vm_ip_address" {
-    value = azurerm_public_ip.tfpubip.ip_address
+output "vm_ip" {
+    value = azurerm_linux_virtual_machine.vm[*].public_ip_address
 }
