@@ -13,7 +13,7 @@ variable "password" {
     default     = "AsslemaYaHmema1234!"  
 }
 
-variable "count" {
+variable "number_of_vms" {
     description = "The number of virtual machines to create"
     default     = 3
 }
@@ -52,7 +52,7 @@ resource "azurerm_subnet" "tfsubnet" {
 }
 
 resource "azurerm_public_ip" "tfpubip" {
-    count = var.count
+    count = var.number_of_vms
     name                = format("pubip%d", count.index + 1)
     location            = azurerm_resource_group.tfrg.location
     resource_group_name = azurerm_resource_group.tfrg.name
@@ -60,7 +60,7 @@ resource "azurerm_public_ip" "tfpubip" {
 }
 
 resource "azurerm_network_interface" "nic" {
-    count = var.count
+    count = var.number_of_vms
     name                = format("nic%d", count.index + 1)
     location            = azurerm_resource_group.tfrg.location
     resource_group_name = azurerm_resource_group.tfrg.name
@@ -74,7 +74,7 @@ resource "azurerm_network_interface" "nic" {
 }
 
 resource "azurerm_linux_virtual_machine" "vm" {
-    count                 = var.count
+    count                 = var.number_of_vms
     name                  = format("vm%d", count.index + 1)
     location              = azurerm_resource_group.tfrg.location
     resource_group_name   = azurerm_resource_group.tfrg.name
