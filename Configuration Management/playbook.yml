@@ -4,32 +4,17 @@
   become: yes
 
   tasks:
-    - name: "Install required packages"
+    - name: "Install Docker"
       apt:
-        name: 
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - gnupg-agent
-          - software-properties-common
+        name: docker.io
         state: present
 
-    - name: "Add Docker's official GPG key"
-      apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
-
-    - name: "Set up the Docker stable repository"
-      apt_repository:
-        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu "$(lsb_release -cs)" stable
-        state: present
-
-    - name: "Install Docker CE"
+    - name: "Install Docker Compose"
       apt:
-        name: docker-ce
+        name: docker-compose
         state: present
 
-    - name: "Ensure Docker is running"
+    - name: "Start Docker Service"
       service:
         name: docker
         state: started
