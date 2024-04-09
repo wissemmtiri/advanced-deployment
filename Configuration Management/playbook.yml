@@ -4,16 +4,24 @@
   become: yes
 
   tasks:
+    #RUN APT UPDATE
+    - name: "Update apt cache"
+      apt:
+        update_cache: yes
+    
+    #INSTALL DOCKER
     - name: "Install Docker"
       apt:
         name: docker.io
         state: present
 
+    #INSTALL DOCKER COMPOSE
     - name: "Install Docker Compose"
       apt:
         name: docker-compose
         state: present
 
+    #START DOCKER SERVICE
     - name: "Start Docker Service"
       service:
         name: docker
