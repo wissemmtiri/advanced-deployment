@@ -1,7 +1,7 @@
 ---
 - name: "Docker Setup"
   hosts: tfvms
-  become: yes
+  #become: yes
 
   tasks:
     #RUN APT UPDATE

@@ -1,3 +1,6 @@
+#================================================================================================
+#                                     COMMON RESOURCES
+#================================================================================================
 resource "azurerm_resource_group" "tfrg" {
   location = var.resource_group_location
   name     = "tfrg"
@@ -17,6 +20,9 @@ resource "azurerm_subnet" "tf-subnet" {
   address_prefixes     = ["10.0.1.0/24"]
 }
 
+#================================================================================================
+#                                     MASTER NODE
+#================================================================================================
 resource "azurerm_public_ip" "vm-public-ip" {
   name                = "vm-public-ip"
   location            = azurerm_resource_group.tfrg.location
@@ -90,8 +96,64 @@ resource "azurerm_linux_virtual_machine" "vm" {
   disable_password_authentication = true
 
   admin_ssh_key {
-    username = "wess"
+    username   = "wess"
     public_key = tls_private_key.secureadmin_ssh.public_key_openssh
+  }
+
+  tags = {
+    environment = "dev"
+  }
+}
+
+#================================================================================================
+#                                     SLAVE NODES
+#================================================================================================
+resource "tls_private_key" "secureslaveadmin_ssh" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "azurerm_network_interface" "vm-nic-slave" {
+  count               = var.number_of_slave_nodes
+  name                = format("vm-nic-slave-%d", count.index)
+  location            = azurerm_resource_group.tfrg.location
+  resource_group_name = azurerm_resource_group.tfrg.name
+
+  ip_configuration {
+    name                          = format("nic-ip-config-%d", count.index)
+    subnet_id                     = azurerm_subnet.tf-subnet.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "vm-slave" {
+  count                 = var.number_of_slave_nodes
+  name                  = format("vm-slave-%d", count.index)
+  location              = azurerm_resource_group.tfrg.location
+  resource_group_name   = azurerm_resource_group.tfrg.name
+  network_interface_ids = [azurerm_network_interface.vm-nic-slave[count.index].id]
+  size                  = "Standard_DS1_v2"
+
+  os_disk {
+    name                 = format("vm-os-disk-%d", count.index)
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-gen2"
+    version   = "latest"
+  }
+
+  computer_name                   = "vm-slave-${count.index}"
+  admin_username                  = "wess"
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = "wess"
+    public_key = tls_private_key.secureslaveadmin_ssh.public_key_openssh
   }
 
   tags = {
