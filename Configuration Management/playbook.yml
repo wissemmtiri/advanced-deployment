@@ -1,6 +1,6 @@
 ---
 - name: "Docker Setup"
-  hosts: tfvms
+  hosts: workers
   #become: yes
 
   tasks:
